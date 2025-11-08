@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Birthday Countdown</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #fdfbfb, #ebedee);
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 2.2em;
+      margin-bottom: 25px;
+      color: #ff6f61;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+    .container {
+      background: #fff;
+      padding: 25px 35px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      max-width: 450px;
+      width: 100%;
+      text-align: center;
+    }
+    input[type="text"], input[type="date"] {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0 18px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      background-color: #ff6f61;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background-color: #e65b50;
+    }
+    .countdown {
+      display: flex;
+      justify-content: space-around;
+      margin: 25px 0;
+      font-size: 22px;
+      flex-wrap: wrap;
+    }
+    .countdown div {
+      background: #ffe5e0;
+      color: #ff3b2e;
+      padding: 15px 10px;
+      border-radius: 12px;
+      min-width: 70px;
+      margin: 5px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+    .small-text {
+      font-size: 14px;
+      color: #7a7a7a;
+      margin-top: 5px;
+    }
+    .share-link {
+      margin-top: 15px;
+      word-break: break-all;
+      color: #007BFF;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    @media(max-width: 480px){
+      .countdown {
+        font-size: 18px;
+      }
+      .countdown div {
+        min-width: 60px;
+        padding: 12px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Birthday Countdown</h1>
+  <div class="container">
+    <input type="text" id="nameInput" placeholder="Enter your name">
+    <input type="date" id="dateInput">
+    <button onclick="startCountdown()">Start Countdown</button>
+    <button onclick="resetCountdown()">Reset</button>
+
+    <div id="countdownContainer" style="display:none;">
+      <h2 id="greeting"></h2>
+      <div class="countdown">
+        <div><span id="days">00</span><div class="small-text">Days</div></div>
+        <div><span id="hours">00</span><div class="small-text">Hours</div></div>
+        <div><span id="minutes">00</span><div class="small-text">Minutes</div></div>
+        <div><span id="seconds">00</span><div class="small-text">Seconds</div></div>
+      </div>
+      <div class="share-link" onclick="copyShareLink()" id="shareLink"></div>
+    </div>
+  </div>
+
+  <script>
+    let countdownInterval;
+
+    function formatTwo(n) {
+      return n.toString().padStart(2, '0');
+    }
+
+    function calculateNextBirthday(dateString) {
+      const now = new Date();
+      const b = new Date(dateString + 'T00:00:00');
+      let next = new Date(now.getFullYear(), b.getMonth(), b.getDate());
+      if (next < now) {
+        next.setFullYear(next.getFullYear() + 1);
+      }
+      return next;
+    }
+
+    function startCountdown() {
+      const name = document.getElementById('nameInput').value.trim();
+      const date = document.getElementById('dateInput').value;
+
+      if (!name || !date) {
+        alert('Please enter both name and date.');
+        return;
+      }
+
+      localStorage.setItem('birthdayName', name);
+      localStorage.setItem('birthdayDate', date);
+
+      const params = new URLSearchParams();
+      params.set('name', name);
+      params.set('date', date);
+      const newUrl = window.location.origin + window.location.pathname + '?' + params.toString();
+      window.history.replaceState({}, '', newUrl);
+
+      document.getElementById('greeting').textContent = `Countdown for ${name}`;
+      document.getElementById('countdownContainer').style.display = 'block';
+
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => updateCountdown(date), 1000);
+      updateCountdown(date);
+    }
+
+    function updateCountdown(dateString) {
+      const next = calculateNextBirthday(dateString);
+      const now = new Date();
+      let diff = Math.max(0, next - now);
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      diff -= days * (1000 * 60 * 60 * 24);
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      diff -= hours * (1000 * 60 * 60);
+      const minutes = Math.floor(diff / (1000 * 60));
+      diff -= minutes * (1000 * 60);
+      const seconds = Math.floor(diff / 1000);
+
+      document.getElementById('days').textContent = formatTwo(days);
+      document.getElementById('hours').textContent = formatTwo(hours);
+      document.getElementById('minutes').textContent = formatTwo(minutes);
+      document.getElementById('seconds').textContent = formatTwo(seconds);
+
+      const shareLink = `${window.location.origin + window.location.pathname}?name=${encodeURIComponent(document.getElementById('nameInput').value)}&date=${dateString}`;
+      document.getElementById('shareLink').textContent = `Shareable link: ${shareLink}`;
+    }
+
+    function resetCountdown() {
+      document.getElementById('nameInput').value = '';
+      document.getElementById('dateInput').value = '';
+      document.getElementById('countdownContainer').style.display = 'none';
+      if (countdownInterval) clearInterval(countdownInterval);
+      window.history.replaceState({}, '', window.location.pathname);
+      localStorage.removeItem('birthdayName');
+      localStorage.removeItem('birthdayDate');
+    }
+
+    function copyShareLink() {
+      const link = document.getElementById('shareLink').textContent.replace('Shareable link: ', '');
+      navigator.clipboard.writeText(link).then(() => {
+        alert('Link copied to clipboard!');
+      });
+    }
+
+    window.addEventListener('load', () => {
+      const params = new URLSearchParams(window.location.search);
+      const name = params.get('name');
+      const date = params.get('date');
+      if (name && date) {
+        document.getElementById('nameInput').value = name;
+        document.getElementById('dateInput').value = date;
+        startCountdown();
+      } else {
+        const savedName = localStorage.getItem('birthdayName');
+        const savedDate = localStorage.getItem('birthdayDate');
+        if (savedName && savedDate) {
+          document.getElementById('nameInput').value = savedName;
+          document.getElementById('dateInput').value = savedDate;
+          startCountdown();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
